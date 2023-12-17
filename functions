@@ -112,3 +112,40 @@ def print_most_successful(df, metric, n_values):
     result_df = df.sort_values(metric, ascending=False)
     return result_df[['text', metric]][:n_values]
 
+def tweet_length_stats(df):
+    """
+    Returns statistics related to the length of tweets in the dataset.
+    It includes the shortest and longest tweets, along with their lengths, and
+    statistics like median, average length, and standard deviation.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame containing the tweets.
+
+    Returns:
+    pd.DataFrame: DataFrame with tweet length statistics.
+    """
+    import pandas as pd
+
+    # Calculate the length of each tweet
+    df['tweet_length'] = df['text'].apply(len)
+
+    # Find the shortest tweet length and the tweet itself
+    shortest_length = df['tweet_length'].min()
+    shortest_tweet = df[df['tweet_length'] == shortest_length]['text'].iloc[0]
+
+    # Find the longest tweet length and the tweet itself
+    longest_length = df['tweet_length'].max()
+    longest_tweet = df[df['tweet_length'] == longest_length]['text'].iloc[0]
+
+    # Find the median, mean, and standard deviation of tweet lengths
+    median_length = df['tweet_length'].median()
+    average_length = df['tweet_length'].mean().round(2)
+    std_deviation = df['tweet_length'].std().round(2)
+
+    # Creating a DataFrame to display the statistics in a structured format
+    stats = pd.DataFrame({
+        'Statistic': ['Shortest Length', 'Shortest Tweet', 'Longest Length', 'Longest Tweet', 'Median Length', 'Average Length', 'Standard Deviation'],
+        'Value': [shortest_length, shortest_tweet, longest_length, longest_tweet, median_length, average_length, std_deviation]
+    })
+
+    return stats
