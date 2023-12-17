@@ -1,0 +1,114 @@
+def check_duplicates(df, column_name):
+    """
+    Check for the number of duplicate values in a specified column.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame to check.
+    column_name (str): Name of the column to check for duplicate values.
+
+    Returns:
+    int: Number of duplicate values in the specified column.
+    """
+    return df[column_name].duplicated().sum()
+    
+def basic_value_counts(df, column_name):
+    """
+    Count the occurrences of each unique value in a specified column.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame to analyze.
+    column_name (str): Name of the column for value count.
+
+    Returns:
+    pandas.Series: Counts of unique values in the specified column.
+    """
+    return df[column_name].value_counts(dropna=False)
+
+
+def clean_text(text):
+    """
+    Basic cleaning of tweet text.
+
+    Parameters:
+    text (str): The text of the tweet to be cleaned.
+
+    Returns:
+    str: Cleaned text.
+    """
+    import re
+
+    # Removing URLs
+    text = re.sub(r'http\S+', '', text)
+
+    # Removing mentions and hashtags
+    text = re.sub(r'@\w+', '', text)
+    text = re.sub(r'#\w+', '', text)
+
+    # Removing special characters and numbers
+    text = re.sub(r'[^A-Za-z ]', '', text)
+
+    # Converting to lowercase
+    text = text.lower()
+
+    return text
+
+
+def apply_text_cleaning(df, text_column):
+    """
+    Apply text cleaning to a specific column in the DataFrame.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame containing the text data.
+    text_column (str): Name of the column containing text to clean.
+
+    Returns:
+    pandas.DataFrame: DataFrame with cleaned text in the specified column.
+    """
+    df[text_column] = df[text_column].apply(lambda x: clean_text(x) if isinstance(x, str) else x)
+    return df
+
+
+def plot_frequencies(df, n_values, search_type='hashtag'):
+    """
+    Plot the frequency of hashtags or mentions in the DataFrame.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame containing Twitter data.
+    n_values (int): Number of top values to plot.
+    search_type (str): Type of search ('hashtag' or 'mention').
+
+    Note:
+    Expects a column in the DataFrame named 'text' containing the tweet text.
+    """
+    import matplotlib.pyplot as plt
+    from collections import Counter
+    import re
+
+    pattern = r'#\w+' if search_type == 'hashtag' else r'@\w+'
+    items = re.findall(pattern, ' '.join(df['text'].dropna()))
+
+    frequencies = dict(Counter(items).most_common(n_values))
+    plt.figure(figsize=(10, 8))
+    plt.barh(list(frequencies.keys()), list(frequencies.values()))
+    plt.title(f'Top {n_values} {search_type.capitalize()}s Frequency')
+    plt.ylabel(f'{search_type.capitalize()}s')
+    plt.xlabel('Frequency')
+    plt.show()
+
+
+# Function to print most successful tweets based on a metric like retweet_count
+def print_most_successful(df, metric, n_values):
+    """
+    Print the most successful tweets based on a specified metric.
+
+    Parameters:
+    df (pandas.DataFrame): DataFrame containing Twitter data.
+    metric (str): Metric to sort by (e.g., 'retweet_count').
+    n_values (int): Number of top values to display.
+
+    Returns:
+    pandas.DataFrame: DataFrame containing top tweets based on the metric.
+    """
+    result_df = df.sort_values(metric, ascending=False)
+    return result_df[['text', metric]][:n_values]
+
