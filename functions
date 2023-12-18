@@ -1,3 +1,28 @@
+def merge_dataframes(folder_path):
+    """
+    Merge all dataframes (CSV files) in the specified folder into one dataframe.
+
+    Parameters:
+    folder_path (str): The path to the folder containing the CSV files.
+
+    Returns:
+    pd.DataFrame: A single dataframe obtained by merging all the CSV files in the folder.
+    """
+    # Initialize an empty dataframe to store the merged data
+    merged_df = pd.DataFrame()
+
+    # Iterate over each file in the folder
+    for file in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file)
+        # Check if the file is a CSV
+        if file.endswith('.csv'):
+            # Read the CSV file and append it to the merged dataframe
+            df = pd.read_csv(file_path)
+            merged_df = pd.concat([merged_df, df], ignore_index=True)
+
+    return merged_df
+
+
 def check_duplicates(df, column_name):
     """
     Check for the number of duplicate values in a specified column.
