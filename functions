@@ -1,4 +1,9 @@
+import pandas as pd
+
 def merge_dataframes(folder_path):
+    import pandas as pd
+    import os
+
     """
     Merge all dataframes (CSV files) in the specified folder into one dataframe.
 
@@ -15,7 +20,7 @@ def merge_dataframes(folder_path):
     for file in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file)
         # Check if the file is a CSV
-        if file.endswith('.csv'):
+        if file.endswith(".csv"):
             # Read the CSV file and append it to the merged dataframe
             df = pd.read_csv(file_path)
             merged_df = pd.concat([merged_df, df], ignore_index=True)
@@ -35,7 +40,8 @@ def check_duplicates(df, column_name):
     int: Number of duplicate values in the specified column.
     """
     return df[column_name].duplicated().sum()
-    
+
+
 def basic_value_counts(df, column_name):
     """
     Count the occurrences of each unique value in a specified column.
@@ -52,33 +58,30 @@ def basic_value_counts(df, column_name):
 
 def clean_text(text):
     """
-    Basic cleaning of tweet text.
+    Enhanced cleaning of tweet text.
 
     Parameters:
     text (str): The text of the tweet to be cleaned.
 
     Returns:
-    str: Cleaned text.
+    str: Cleaned text. Returns an empty string if the result is only whitespaces.
     """
     import re
 
-    # Removing URLs
-    text = re.sub(r'http\S+', '', text)
+    # Removing URLs, mentions, and hashtags
+    text = re.sub(r"http\S+|@\w+|#\w+", "", text)
 
-    # Removing mentions and hashtags
-    text = re.sub(r'@\w+', '', text)
-    text = re.sub(r'#\w+', '', text)
+    # Removing special characters and numbers (optional)
+    # text = re.sub(r"[^A-Za-z ]", "", text)
 
-    # Removing special characters and numbers
-    text = re.sub(r'[^A-Za-z ]', '', text)
+    # Converting to lowercase and stripping extra whitespaces
+    text = " ".join(text.lower().split())
 
-    # Converting to lowercase
-    text = text.lower()
-
-    return text
+    # Return an empty string if the cleaned text is only whitespace
+    return text if text.strip() else ""
 
 
-def apply_text_cleaning(df, text_column):
+def apply_text_cleaning(df, text_original, new_text):
     """
     Apply text cleaning to a specific column in the DataFrame.
 
@@ -89,11 +92,13 @@ def apply_text_cleaning(df, text_column):
     Returns:
     pandas.DataFrame: DataFrame with cleaned text in the specified column.
     """
-    df[text_column] = df[text_column].apply(lambda x: clean_text(x) if isinstance(x, str) else x)
+    df[new_text] = df[text_original].apply(
+        lambda x: clean_text(x) if isinstance(x, str) else x
+    )
     return df
 
 
-def plot_frequencies(df, n_values, search_type='hashtag'):
+def plot_frequencies(df, n_values, search_type="hashtag"):
     """
     Plot the frequency of hashtags or mentions in the DataFrame.
 
@@ -109,15 +114,15 @@ def plot_frequencies(df, n_values, search_type='hashtag'):
     from collections import Counter
     import re
 
-    pattern = r'#\w+' if search_type == 'hashtag' else r'@\w+'
-    items = re.findall(pattern, ' '.join(df['text'].dropna()))
+    pattern = r"#\w+" if search_type == "hashtag" else r"@\w+"
+    items = re.findall(pattern, " ".join(df["text"].dropna()))
 
     frequencies = dict(Counter(items).most_common(n_values))
     plt.figure(figsize=(10, 8))
     plt.barh(list(frequencies.keys()), list(frequencies.values()))
-    plt.title(f'Top {n_values} {search_type.capitalize()}s Frequency')
-    plt.ylabel(f'{search_type.capitalize()}s')
-    plt.xlabel('Frequency')
+    plt.title(f"Top {n_values} {search_type.capitalize()}s Frequency")
+    plt.ylabel(f"{search_type.capitalize()}s")
+    plt.xlabel("Frequency")
     plt.show()
 
 
@@ -135,9 +140,10 @@ def print_most_successful(df, metric, n_values):
     pandas.DataFrame: DataFrame containing top tweets based on the metric.
     """
     result_df = df.sort_values(metric, ascending=False)
-    return result_df[['text', metric]][:n_values]
+    return result_df[["text", metric]][:n_values]
 
-def tweet_length_stats(df):
+
+def tweet_length_stats(df, text_column: str):
     """
     Returns statistics related to the length of tweets in the dataset.
     It includes the shortest and longest tweets, along with their lengths, and
@@ -152,25 +158,84 @@ def tweet_length_stats(df):
     import pandas as pd
 
     # Calculate the length of each tweet
-    df['tweet_length'] = df['text'].apply(len)
+    df["tweet_length"] = df[text_column].apply(len)
+    df = df.drop(df[df["tweet_length"] == 0].index)
 
     # Find the shortest tweet length and the tweet itself
-    shortest_length = df['tweet_length'].min()
-    shortest_tweet = df[df['tweet_length'] == shortest_length]['text'].iloc[0]
+    shortest_length = df["tweet_length"].min()
+    shortest_tweet = df[df["tweet_length"] == shortest_length][text_column].iloc[0]
 
     # Find the longest tweet length and the tweet itself
-    longest_length = df['tweet_length'].max()
-    longest_tweet = df[df['tweet_length'] == longest_length]['text'].iloc[0]
+    longest_length = df["tweet_length"].max()
+    longest_tweet = df[df["tweet_length"] == longest_length][text_column].iloc[0]
 
     # Find the median, mean, and standard deviation of tweet lengths
-    median_length = df['tweet_length'].median()
-    average_length = df['tweet_length'].mean().round(2)
-    std_deviation = df['tweet_length'].std().round(2)
+    median_length = df["tweet_length"].median()
+    average_length = df["tweet_length"].mean().round(2)
+    std_deviation = df["tweet_length"].std().round(2)
 
     # Creating a DataFrame to display the statistics in a structured format
-    stats = pd.DataFrame({
-        'Statistic': ['Shortest Length', 'Shortest Tweet', 'Longest Length', 'Longest Tweet', 'Median Length', 'Average Length', 'Standard Deviation'],
-        'Value': [shortest_length, shortest_tweet, longest_length, longest_tweet, median_length, average_length, std_deviation]
-    })
+    stats = pd.DataFrame(
+        {
+            "Statistic": [
+                "Shortest Length",
+                "Shortest Tweet",
+                "Longest Length",
+                "Longest Tweet",
+                "Median Length",
+                "Average Length",
+                "Standard Deviation",
+            ],
+            "Value": [
+                shortest_length,
+                shortest_tweet,
+                longest_length,
+                longest_tweet,
+                median_length,
+                average_length,
+                std_deviation,
+            ],
+        }
+    )
 
     return stats
+
+
+def analyze_tweet_lengths(df, text_column) -> pd.DataFrame:
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from scipy.stats import norm
+
+    """ Adds a new column 'tweet_length' and plots a histogram of the length distribution"""
+
+    # Compute the length of each tweet
+    df["tweet_length"] = df[text_column].apply(len)
+
+    # drop all rows where the length is 0
+    df = df.drop(df[df["tweet_length"] == 0].index)
+
+    # Calculate average length
+    average_length = df["tweet_length"].mean()
+    std_deviation = df["tweet_length"].std()
+    # print(f"Average Tweet Length: {average_length}")
+    # print(f"Standard Deviation of Tweet Length: {std_deviation}")
+
+    # Make a plot
+    plt.figure(figsize=(10, 6))
+
+    # Histogram of tweet lengths
+    plt.hist(df["tweet_length"], bins=30, alpha=0.3, color="blue", edgecolor="black")
+
+    # Normal distribution curve
+    xmin, xmax = plt.xlim()
+    x = np.linspace(xmin, xmax, 100)
+    p = norm.pdf(x, average_length, std_deviation)
+    plt.plot(x, p, "k", linewidth=2)
+
+    title = "Tweet Length Distribution with Normal Curve"
+    plt.title(title)
+    plt.xlabel("Tweet Length")
+    plt.ylabel("Frequency")
+
+    plt.show()
+
